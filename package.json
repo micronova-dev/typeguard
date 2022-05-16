@@ -1,0 +1,40 @@
+{
+  "name": "typeguard",
+  "version": "1.0.0",
+  "description": "Simple typescript typeguard utilities including object/tuple support and nominal types such as Zero, Integer, Finite, Positive, Negative, and Match (regexp).",
+  "main": "index.ts",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/micronova-dev/typeguard.git"
+  },
+  "keywords": [
+    "typescript",
+    "typeguard",
+    "object",
+    "tuple",
+    "Nominal",
+    "Zero",
+    "Integer",
+    "Finite",
+    "Positive",
+    "Negative",
+    "Match",
+    "RegExp"
+  ],
+  "author": "MicroNova",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/micronova-dev/typeguard/issues"
+  },
+  "homepage": "https://github.com/micronova-dev/typeguard#readme",
+  "devDependencies": {
+    "@types/jest": "^27.4.1",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.3",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.2"
+  }
+}
