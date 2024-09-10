@@ -1,5 +1,5 @@
 # Typeguard
-Simple typescript [__typeguard__](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates) utilities including  object/tuple support and nominal types such as Zero, Integer, Finite, Positive, Negative, and Match (regexp).
+Simple typescript [__typeguard__](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates) runtime type-checking utilities including  object/tuple support and nominal types such as Zero, Integer, Finite, Positive, Negative, and Match (regexp).
 
 ## Installation
 
