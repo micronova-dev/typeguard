@@ -26,98 +26,134 @@ const Value = {
   },
   "array": [1, 2],
   "email": "abc@de.com",
-  "uuid": "123e4567-e89b-12d3-a456-426614174000"
-};
+  "uuid": "123e4567-e89b-12d3-a456-426614174000",
+  "date": new Date(),
+  "regexp": /abc/g
+} as const;
 
 // asserts that only given named values are guarded
-const guardsValues = <T>(guard: G.is<T>, names: (keyof typeof Value)[]) => {
+const guardsValues = <T>(guard: G.Is<T>, names: (keyof typeof Value)[]) => {
   const table = new Map<unknown, boolean>(Object.values(Value).map((v) => [v, false]));
   names.forEach((v) => table.set(Value[v], true));
   table.forEach((v, k) => expect(guard(k)).toBe(v));
 }
 
 describe("typeguard", () => {
-  it("number", () => guardsValues(
+  test("number", () => guardsValues<number>(
     G.isNumber,
     ["0", "1", "-1", "2.7", "-2.7", "NaN", "+Infinity", "-Infinity"]
   ));
 
-  it("bigint", () => guardsValues(
+  test("bigint", () => guardsValues<bigint>(
     G.isBigint,
     ["12n"]
   ));
 
-  it("string", () => guardsValues(
+  test("string", () => guardsValues<string>(
     G.isString,
     ["", "email", "uuid"]
   ));
 
-  it("boolean", () => guardsValues(
+  test("boolean", () => guardsValues<boolean>(
     G.isBoolean,
     ["true", "false"]
   ));
 
-  it("undefined", () => guardsValues(
+  test("undefined", () => guardsValues<undefined>(
     G.isUndefined,
     ["undefined"]
   ));
 
-  it("null", () => guardsValues(
+  test("null", () => guardsValues<null>(
     G.isNull,
     ["null"]
   ));
 
-  it("nil", () => guardsValues(
+  test("nil", () => guardsValues<undefined | null>(
     G.isNil,
     ["undefined", "null"]
   ));
 
-  it("integer", () => guardsValues(
+  test("integer", () => guardsValues<G.Integer>(
     G.isInteger,
     ["0", "1", "-1"]
   ));
 
-  it("finite", () => guardsValues(
+  test("finite", () => guardsValues<G.Finite>(
     G.isFinite,
     ["0", "1", "-1", "2.7", "-2.7"]
   ));
 
-  it("zero", () => guardsValues(
+  test("zero", () => guardsValues<G.Zero>(
     G.isZero,
     ["0"]
   ));
 
-  it("positive", () => guardsValues(
+  test("positive", () => guardsValues<G.Positive>(
     G.isPositive,
     ["1", "2.7", "+Infinity"]
   ));
 
-  it("negative", () => guardsValues(
+  test("negative", () => guardsValues<G.Negative>(
     G.isNegative,
     ["-1", "-2.7", "-Infinity"]
   ));
 
-  it("symbol", () => guardsValues(
+  test("symbol", () => guardsValues<symbol>(
     G.isSymbol,
     [":a"]
   ));
 
-  it("function", () => guardsValues(
+  test("function", () => guardsValues<Function>(
     G.isFunction,
     ["f"]
   ));
 
-  it("isAnd", () => {
-    G.isAnd(G.isInteger, G.isPositive),
-    ["1"]
+  test("isAnd", () => {
+    guardsValues<number & G.Finite & G.Negative>(
+      G.isAnd(G.isNumber, G.isFinite, G.isNegative),
+      ["-1", "-2.7"]
+    );
+
+    guardsValues<G.Integer & G.Positive>(
+      G.isAnd(G.isInteger, G.isPositive),
+      ["1"]
+    );
+
+    guardsValues<G.Zero>(
+      G.isAnd(G.isZero),
+      ["0"]
+    );
+
+    guardsValues<unknown>(
+      G.isAnd(),
+      Object.keys(Value) as (keyof typeof Value)[]
+    );
+  });
+
+  test("isOr", () => {
+    guardsValues<G.Zero | G.Positive | G.Negative>(
+      G.isOr(G.isZero, G.isPositive, G.isNegative),
+      ["0", "1", "2.7", "+Infinity", "-1", "-2.7", "-Infinity"]
+    );
+
+    guardsValues<G.Zero | G.Positive>(
+      G.isOr(G.isZero, G.isPositive),
+      ["0", "1", "2.7", "+Infinity"]
+    );
+
+    guardsValues<unknown>(
+      G.isOr(G.isZero),
+      ["0"]
+    );
+
+    guardsValues<unknown>(
+      G.isOr(),
+      []
+    );
   })
 
-  it("isOr", () => {
-    G.isOr(G.isZero, G.isPositive),
-    ["0", "1", "2.7"]
-  })
-
-  it("match", () => {
+  test("match", () => {
     const isEmail = G.isMatch("email", /([!#-'*+/-9=?A-Z^-~-]+(\.[!#-'*+/-9=?A-Z^-~-]+)*|"([]!#-[^-~ \t]|(\\[\t -~]))+")@([!#-'*+/-9=?A-Z^-~-]+(\.[!#-'*+/-9=?A-Z^-~-]+)*|\[[\t -Z^-~]*])/);
 
     guardsValues(
@@ -140,13 +176,13 @@ describe("typeguard", () => {
     );
   })
 
-  it("object", () => {
-    guardsValues(
+  test("object", () => {
+    guardsValues<{}>(
       G.isObject({}),
       ["{}"]
     );
 
-    guardsValues(
+    guardsValues<{ a: string, b: number }>(
       G.isObject({
         a: G.isString,
         b: G.isNumber 
@@ -154,7 +190,7 @@ describe("typeguard", () => {
       ["object"]
     );
 
-    guardsValues(
+    guardsValues<{ a: String, b: string }>(
       G.isObject({
         a: G.isString,
         b: G.isString
@@ -162,14 +198,14 @@ describe("typeguard", () => {
       []
     );
 
-    guardsValues(
+    guardsValues<{ a: string }>(
       G.isObject({
         a: G.isString
       }, false),
       ["object"]
     );
 
-    guardsValues(
+    guardsValues<{ a: number }>(
       G.isObject({
         a: G.isNumber
       }, false),
@@ -177,49 +213,66 @@ describe("typeguard", () => {
     );
  });
 
-  it("tuple", () => {
-    guardsValues(
+  test("tuple", () => {
+    guardsValues<[]>(
       G.isObject([]),
       ["[]"]
     );
 
-    guardsValues(
+    guardsValues<readonly [string, number]>(
       G.isObject([G.isString, G.isNumber] as const),
       ["tuple"]
     );
 
-    guardsValues(
+    guardsValues<readonly [String, number, boolean]>(
       G.isObject([G.isString, G.isNumber, G.isBoolean] as const),
       []
     );
 
-    guardsValues(
+    guardsValues<readonly [string]>(
       G.isObject([G.isString] as const),
       []
     );
 
-    guardsValues(
+    guardsValues<readonly [string]>(
       G.isObject([G.isString] as const, false),
       ["tuple"]
     );
   });
 
-  it("array", () => {
-    guardsValues(
+  test("array", () => {
+    guardsValues<number[]>(
       G.isArray(G.isNumber),
       ["array", "[]"]
     );
 
-    guardsValues(
+    guardsValues<string[]>(
       G.isArray(G.isString),
       ["[]"]
     );
   });
 
-  it("isAnyOf", () => {
-    guardsValues(
+  test("isAnyOf", () => {
+    guardsValues<undefined | null | 1>(
       G.isAnyOf([undefined, null, 1] as const),
       ["undefined", "null", "1"]
     )
   });
+
+  test("isInstance", () => {
+    guardsValues<Date>(
+      G.isInstance(Date),
+      ["date"]
+    );
+
+    guardsValues<RegExp>(
+      G.isInstance(RegExp),
+      ["regexp"]
+    )
+
+    guardsValues<Object>(
+      G.isInstance(Object),
+      ["{}", "[]", "f", "tuple", "object", "array", "date", "regexp"]
+    );
+  })
 });

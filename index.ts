@@ -1,20 +1,29 @@
 // typeguard utilities
 
-// typeguard type for given type T
-export type is<T> = (x: unknown) => x is T;
+// typeguard type for given type T ( = unknown by default)
+export type Is<T = unknown> = (x: unknown) => x is T;
 
-// type for typeguard; isFor<is<T>> = T
-export type isFor<G> = G extends (x: any) => x is infer T ? T : never;
+// type for typeguard; IsFor<Is<T>> = T; unknown is returned for non-typeguard functions
+export type IsFor<G> = G extends Is<infer T> ? T : unknown;
 
-// object typeguard (object/tuple of typeguards for value types; e.g. ObjectGuard<T> = {a : is<number>} when T = {a: number}
-export type ObjectGuard<T extends object> = {[K in keyof T]: is<T[K]>}
+// object typeguard (object/tuple of typeguards for value types; e.g. ObjectGuard<T> = {a : Is<number>} when T = {a: number}
+export type ObjectGuard<T extends object> = {[K in keyof T]: Is<T[K]>}
 
 // type T for ObjectGuard<T>; ObjectGuardFor<ObjectGuard<T>> = T
-export type ObjectGuardFor<G extends object> = {[K in keyof G]: isFor<G[K]>}
+export type ObjectGuardFor<G extends object> = {[K in keyof G]: IsFor<G[K]>}
 
-// logical combinations
-export const isOr = <T, U>(g1: is<T>, g2: is<U>) => (x: unknown): x is T | U => g1(x) || g2(x);
-export const isAnd = <T, U>(g1: is<T>, g2: is<U>) => (x: unknown): x is T & U => g1(x) && g2(x);
+// logical combinations (multi-argument)
+
+export type IsForOf<ITT extends readonly Is[]> =
+  ITT extends [infer IT, ...infer IRR extends Is[]]
+    ? [IsFor<IT>, ...IsForOf<IRR>]
+    : []
+ 
+export type OrOf<TT> = TT extends [infer T, ...infer R] ? R extends [] ? T : (T | OrOf<R>) : never;
+export type AndOf<TT> = TT extends [infer T, ...infer R] ? R extends [] ? T : (T & AndOf<R>) : never;
+
+export const isOr = <TT extends readonly Is[]>(...args: TT) => (x: unknown): x is OrOf<IsForOf<TT>> => args.reduce((b, g) => b || g(x), false);
+export const isAnd = <TT extends readonly Is[]>(...args: TT) => (x: unknown): x is AndOf<IsForOf<TT>> => args.reduce((b, g) => b && g(x), true);
 
 // primitives
 export const isNumber = (x: unknown): x is number => typeof(x) === "number";
@@ -28,7 +37,10 @@ export const isUndefined = isEqual(undefined);
 export const isNull = isEqual(null);
 export const isNil = isOr(isUndefined, isNull);
 
-// nominal primitive types
+// isntanceof typeguard
+export const isInstance = <C extends abstract new(...args: never) => unknown>(c: C) => (x: unknown): x is InstanceType<C> => (x instanceof c);
+
+// nominal primitive types with and/or support
 export type Nominal<T, B extends string> = T & Record<B, B>;
 
 export type Zero = 0;
@@ -50,7 +62,7 @@ export const isNegative = (x: unknown): x is Negative => isNumber(x) && x < 0;
 export const isMatch = <B extends string>(b: B, r: RegExp) => (x: unknown): x is Nominal<string, B> => isString(x) && r.test(x);
 
 // returns a function that converts to T or throws error
-export const to = <T>(guard: is<T>, error = (x: unknown) => new TypeError(`type mismatch: ${x}`)): (x: unknown) => T => {
+export const to = <T>(guard: Is<T>, error = (x: unknown) => new TypeError(`type mismatch: ${x}`)): (x: unknown) => T => {
   return (x: unknown) => {  
     if (guard(x)) {
       return x;
@@ -65,11 +77,11 @@ export const isAnyOf = <T extends readonly unknown[]>(v: T) => (x: unknown): x i
 }
 
 // homogeneous array
-export const isArray = <T>(g: is<T>) => (x: unknown): x is T[] => Array.isArray(x) && x.every(g);
+export const isArray = <T>(g: Is<T>) => (x: unknown): x is T[] => Array.isArray(x) && x.every(g);
 
-// object/tuple
+// "plain" object/tuple (with Object or Array constructor)
 export const isObject = <T extends object>(g: ObjectGuard<T>, exact = true) => (x: unknown): x is T => {
-  if (x && typeof(x) === "object") {
+  if (x && typeof(x) === "object" && (x.constructor === Object || x.constructor === Array)) {
     if (Array.isArray(g)) {
       if (!Array.isArray(x)) {
         return false;

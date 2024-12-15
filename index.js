@@ -1,11 +1,22 @@
 "use strict";
 // typeguard utilities
-exports.__esModule = true;
-exports.isObject = exports.isArray = exports.isAnyOf = exports.to = exports.isMatch = exports.isNegative = exports.isPositive = exports.isFinite = exports.isInteger = exports.isZero = exports.isNil = exports.isNull = exports.isUndefined = exports.isEqual = exports.isFunction = exports.isSymbol = exports.isBoolean = exports.isString = exports.isBigint = exports.isNumber = exports.isAnd = exports.isOr = void 0;
-// logical combinations
-var isOr = function (g1, g2) { return function (x) { return g1(x) || g2(x); }; };
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isObject = exports.isArray = exports.isAnyOf = exports.to = exports.isMatch = exports.isNegative = exports.isPositive = exports.isFinite = exports.isInteger = exports.isZero = exports.isInstance = exports.isNil = exports.isNull = exports.isUndefined = exports.isEqual = exports.isFunction = exports.isSymbol = exports.isBoolean = exports.isString = exports.isBigint = exports.isNumber = exports.isAnd = exports.isOr = void 0;
+var isOr = function () {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    return function (x) { return args.reduce(function (b, g) { return b || g(x); }, false); };
+};
 exports.isOr = isOr;
-var isAnd = function (g1, g2) { return function (x) { return g1(x) && g2(x); }; };
+var isAnd = function () {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    return function (x) { return args.reduce(function (b, g) { return b && g(x); }, true); };
+};
 exports.isAnd = isAnd;
 // primitives
 var isNumber = function (x) { return typeof (x) === "number"; };
@@ -25,6 +36,9 @@ exports.isEqual = isEqual;
 exports.isUndefined = (0, exports.isEqual)(undefined);
 exports.isNull = (0, exports.isEqual)(null);
 exports.isNil = (0, exports.isOr)(exports.isUndefined, exports.isNull);
+// isntanceof typeguard
+var isInstance = function (c) { return function (x) { return (x instanceof c); }; };
+exports.isInstance = isInstance;
 exports.isZero = (0, exports.isEqual)(0);
 var isInteger = function (x) { return Number.isInteger(x); };
 exports.isInteger = isInteger;
@@ -56,11 +70,11 @@ exports.isAnyOf = isAnyOf;
 // homogeneous array
 var isArray = function (g) { return function (x) { return Array.isArray(x) && x.every(g); }; };
 exports.isArray = isArray;
-// object/tuple
+// "plain" object/tuple (with Object or Array constructor)
 var isObject = function (g, exact) {
     if (exact === void 0) { exact = true; }
     return function (x) {
-        if (x && typeof (x) === "object") {
+        if (x && typeof (x) === "object" && (x.constructor === Object || x.constructor === Array)) {
             if (Array.isArray(g)) {
                 if (!Array.isArray(x)) {
                     return false;
